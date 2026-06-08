@@ -1,6 +1,6 @@
 {
-  "name": "",
-  "description": "",
+  "name": "Ecossistema",
+  "description": "App para gestão de promotores com logo da Solar Coca-Cola",
   "requestFramePermissions": [],
-  "majorCapabilities": []
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

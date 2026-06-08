@@ -48,7 +48,7 @@ export default function Layout() {
       {/* Sidebar Desktop */}
       <aside className="hidden md:flex flex-col w-[240px] bg-coke-black border-r border-coke-gray">
         <div className="p-6 flex items-center justify-center border-b border-coke-gray">
-          <img src="/logo-solar.png" alt="Solar Coca-Cola" className="h-[40px] object-contain" />
+          <img src="/logo-solar.png" alt="Solar" className="h-[40px] object-contain" />
         </div>
         
         <nav className="flex-1 py-5 space-y-1">
@@ -80,7 +80,7 @@ export default function Layout() {
 
       {/* Mobile Header */}
       <div className="md:hidden fixed top-0 left-0 right-0 h-[70px] bg-coke-black border-b border-coke-gray flex items-center justify-between px-4 z-50">
-        <img src="/logo-solar.png" alt="Solar Coca-Cola" className="h-[30px] object-contain" />
+        <img src="/logo-solar.png" alt="Solar" className="h-[30px] object-contain" />
         <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-2 text-coke-white">
           {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
