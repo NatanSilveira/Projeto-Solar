@@ -19,8 +19,10 @@ interface DataContextType {
   deleteFormTemplate: (id: string) => Promise<void>;
   addFormResponse: (response: Omit<FormResponse, 'id' | 'submittedAt'>) => Promise<void>;
   addRequest: (request: Omit<MaterialRequest, 'id' | 'status' | 'date'>) => Promise<void>;
-  updateRequestStatus: (id: string, status: 'approved' | 'rejected') => Promise<void>;
+  updateRequestStatus: (id: string, status: 'approved' | 'rejected', rejectionReason?: string) => Promise<void>;
   updateUserStatus: (id: string, status: User['status']) => Promise<void>;
+  editUser: (id: string, name: string, email: string) => Promise<void>;
+  resetUserPassword: (id: string, password: string) => Promise<void>;
   deleteUser: (id: string) => Promise<void>;
   addTeamMember: (member: User) => void;
   addStore: (store: Omit<Store, 'id'>) => Promise<void>;
@@ -82,7 +84,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
             status: r.status,
             date: r.created_at,
             description: r.description,
-            promoterId: r.promoter_id
+            promoterId: r.promoter_id,
+            rejectionReason: r.rejection_reason
           }));
           setRequests(mappedRequests);
         } else {
@@ -270,13 +273,13 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const updateRequestStatus = async (id: string, status: 'approved' | 'rejected') => {
-    setRequests(prev => prev.map(r => r.id === id ? { ...r, status } : r));
+  const updateRequestStatus = async (id: string, status: 'approved' | 'rejected', rejectionReason?: string) => {
+    setRequests(prev => prev.map(r => r.id === id ? { ...r, status, rejectionReason } : r));
     try {
       await fetch(`/api/requests/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status })
+        body: JSON.stringify({ status, rejectionReason })
       });
     } catch (error) {
       console.error("Failed to update request status", error);
@@ -293,6 +296,31 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       });
     } catch (error) {
       console.error("Failed to update user status", error);
+    }
+  };
+
+  const editUser = async (id: string, name: string, email: string) => {
+    setTeam(prev => prev.map(u => u.id === id ? { ...u, name, email } : u));
+    try {
+      await fetch(`/api/users/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email })
+      });
+    } catch (error) {
+      console.error("Failed to edit user", error);
+    }
+  };
+
+  const resetUserPassword = async (id: string, password: string) => {
+    try {
+      await fetch(`/api/users/${id}/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password })
+      });
+    } catch (error) {
+      console.error("Failed to reset password", error);
     }
   };
 
@@ -369,6 +397,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       addRequest,
       updateRequestStatus,
       updateUserStatus,
+      editUser,
+      resetUserPassword,
       deleteUser,
       addTeamMember,
       addStore,

@@ -74,7 +74,7 @@ export default function Layout() {
         </nav>
 
         <div className="p-6 border-t border-coke-gray text-[11px] text-text-dim">
-          v2.4.0-Stable Build<br/>Modo Offline Ativo
+          v1.0.0-Beta<br/>Modo Offline Ativo
         </div>
       </aside>
 

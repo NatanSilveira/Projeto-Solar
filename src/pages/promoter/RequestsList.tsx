@@ -223,6 +223,15 @@ export default function RequestsList() {
                   {selectedRequest.description}
                 </div>
               </div>
+
+              {selectedRequest.status === 'rejected' && selectedRequest.rejectionReason && (
+                <div className="space-y-1 mt-4">
+                  <label className="text-[10px] font-bold text-danger uppercase tracking-wider">Motivo da Recusa</label>
+                  <div className="p-4 bg-danger/10 text-danger rounded-xl text-sm border border-danger/20">
+                    {selectedRequest.rejectionReason}
+                  </div>
+                </div>
+              )}
             </div>
 
             {isSupervisor && selectedRequest.status === 'pending' ? (

@@ -186,28 +186,7 @@ async function startServer() {
           avatar: user.avatar
         });
       } else {
-        // Auto-create user for testing if it's a new login attempt with SOLAR email
-        if (!email.endsWith('@solar.com')) {
-          return res.status(404).json({ error: "Usuário não encontrado" });
-        }
-
-        const id = Math.random().toString(36).substr(2, 9);
-        const name = email.split('@')[0];
-        const avatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${name}`;
-        
-        await db.execute({
-          sql: "INSERT INTO users (id, name, email, role, avatar, password) VALUES (?, ?, ?, ?, ?, ?)",
-          args: [id, name, email, role, avatar, password || null]
-        });
-        
-        res.json({
-          id,
-          name,
-          email,
-          role: role,
-          supervisorId: null,
-          avatar
-        });
+        return res.status(404).json({ error: "Usuário não encontrado. Cadastre-se primeiro." });
       }
     } catch (error) {
       console.error("Login error:", error);
@@ -659,17 +638,55 @@ async function startServer() {
   app.patch("/api/requests/:id", async (req, res) => {
     try {
       const { id } = req.params;
-      const { status } = req.body;
+      const { status, rejectionReason } = req.body;
       const db = getTursoClient();
       
       await db.execute({
-        sql: "UPDATE material_requests SET status = ? WHERE id = ?",
-        args: [status, id]
+        sql: "UPDATE material_requests SET status = ?, rejection_reason = ? WHERE id = ?",
+        args: [status, rejectionReason || null, id]
       });
       
       res.json({ success: true });
     } catch (error) {
       console.error("Error updating request status:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Update User
+  app.put("/api/users/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { name, email } = req.body;
+      const db = getTursoClient();
+      
+      await db.execute({
+        sql: "UPDATE users SET name = ?, email = ? WHERE id = ?",
+        args: [name, email.toLowerCase(), id]
+      });
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error updating user:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Reset User Password
+  app.post("/api/users/:id/reset-password", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { password } = req.body;
+      const db = getTursoClient();
+      
+      await db.execute({
+        sql: "UPDATE users SET password = ? WHERE id = ?",
+        args: [password, id]
+      });
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error resetting password:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   });

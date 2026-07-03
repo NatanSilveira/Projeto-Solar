@@ -84,4 +84,5 @@ export interface MaterialRequest {
   description: string;
   status: 'pending' | 'approved' | 'rejected';
   date: string;
+  rejectionReason?: string;
 }

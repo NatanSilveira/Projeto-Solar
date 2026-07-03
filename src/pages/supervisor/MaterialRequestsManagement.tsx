@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
-import { Package, Search, Filter, CheckCircle2, XCircle, Clock, MapPin, User as UserIcon } from 'lucide-react';
+import { Package, Search, Filter, CheckCircle2, XCircle, Clock, MapPin, User as UserIcon, X } from 'lucide-react';
 import { useData } from '../../store/DataContext';
 
 export default function MaterialRequestsManagement() {
   const { requests, updateRequestStatus, team } = useData();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
+  
+  const [rejectingId, setRejectingId] = useState<string | null>(null);
+  const [rejectionReason, setRejectionReason] = useState('');
 
   const filteredRequests = requests.filter(request => {
     const matchesSearch = 
@@ -17,8 +20,12 @@ export default function MaterialRequestsManagement() {
     return matchesSearch && matchesStatus;
   });
 
-  const handleStatusUpdate = async (id: string, status: 'approved' | 'rejected') => {
-    await updateRequestStatus(id, status);
+  const handleStatusUpdate = async (id: string, status: 'approved' | 'rejected', reason?: string) => {
+    await updateRequestStatus(id, status, reason);
+    if (status === 'rejected') {
+      setRejectingId(null);
+      setRejectionReason('');
+    }
   };
 
   const getStatusStyle = (status: string) => {
@@ -117,12 +124,18 @@ export default function MaterialRequestsManagement() {
                 <p className="text-sm text-text-dim leading-relaxed">
                   {request.description || 'Sem descrição detalhada.'}
                 </p>
+                {request.status === 'rejected' && request.rejectionReason && (
+                  <div className="mt-4 p-3 bg-danger/10 border border-danger/20 rounded-lg">
+                    <p className="text-[11px] uppercase tracking-widest text-danger font-bold mb-1">Motivo da Recusa:</p>
+                    <p className="text-sm text-danger">{request.rejectionReason}</p>
+                  </div>
+                )}
               </div>
 
               {request.status === 'pending' && (
                 <div className="flex gap-3 pt-2">
                   <button 
-                    onClick={() => handleStatusUpdate(request.id, 'rejected')}
+                    onClick={() => setRejectingId(request.id)}
                     className="flex-1 flex items-center justify-center gap-2 px-4 py-3 border border-danger/30 text-danger rounded-xl font-bold text-xs uppercase hover:bg-danger/10 transition-colors"
                   >
                     <XCircle className="w-4 h-4" />
@@ -148,6 +161,51 @@ export default function MaterialRequestsManagement() {
           </div>
         )}
       </div>
+
+      {/* REJECTION MODAL */}
+      {rejectingId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-coke-black border border-coke-gray w-full max-w-md rounded-2xl">
+            <div className="p-6 border-b border-coke-gray flex justify-between items-center bg-coke-darker rounded-t-2xl">
+              <h2 className="text-xl font-bold text-coke-white">Justificar Recusa</h2>
+              <button 
+                onClick={() => { setRejectingId(null); setRejectionReason(''); }}
+                className="p-2 hover:bg-coke-gray rounded-full text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div className="space-y-2">
+                <label className="text-[11px] font-bold text-coke-white uppercase tracking-widest pl-1">Motivo</label>
+                <textarea 
+                  value={rejectionReason}
+                  onChange={(e) => setRejectionReason(e.target.value)}
+                  placeholder="Explique o motivo da recusa..."
+                  className="w-full h-32 bg-coke-darker border border-coke-gray rounded-xl p-4 text-coke-white focus:ring-1 focus:ring-coke-red outline-none resize-none"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button 
+                  onClick={() => { setRejectingId(null); setRejectionReason(''); }}
+                  className="flex-1 px-4 py-4 border border-coke-gray text-coke-white rounded-xl font-bold text-xs uppercase hover:bg-coke-gray transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  onClick={() => handleStatusUpdate(rejectingId, 'rejected', rejectionReason)}
+                  disabled={!rejectionReason.trim()}
+                  className="flex-1 px-4 py-4 bg-danger text-white rounded-xl font-bold text-xs uppercase hover:bg-red-600 transition-colors shadow-lg shadow-danger/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Confirmar Recusa
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
