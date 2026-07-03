@@ -196,13 +196,16 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       supervisorId: user?.role === 'supervisor' ? user.id : undefined
     };
 
+    // Explicitly add supervisorId to the payload since JSON.stringify omits undefined
+    const payload = { ...newTemplate, supervisorId: user?.role === 'supervisor' ? user.id : null };
+
     setFormTemplates(prev => [newTemplate, ...prev]);
 
     try {
       await fetch('/api/forms', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newTemplate)
+        body: JSON.stringify(payload)
       });
     } catch (error) {
       console.error("Failed to create form template", error);
