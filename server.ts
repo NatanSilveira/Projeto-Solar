@@ -43,6 +43,7 @@ async function ensureTables(db: Client) {
   try { await db.execute("ALTER TABLE users ADD COLUMN status TEXT DEFAULT 'active'"); } catch (e) {}
   try { await db.execute("ALTER TABLE users ADD COLUMN password TEXT"); } catch (e) {}
   try { await db.execute("ALTER TABLE users ADD COLUMN store_id TEXT"); } catch (e) {}
+  try { await db.execute("ALTER TABLE users ADD COLUMN supervisor_id TEXT"); } catch (e) {}
 
   await db.execute(`
     CREATE TABLE IF NOT EXISTS products (
@@ -77,11 +78,13 @@ async function ensureTables(db: Client) {
       questions TEXT NOT NULL,
       target_promoter_ids TEXT,
       created_at TEXT NOT NULL,
-      updated_at TEXT NOT NULL
+      updated_at TEXT NOT NULL,
+      supervisor_id TEXT
     )
   `);
 
   try { await db.execute("ALTER TABLE form_templates ADD COLUMN target_promoter_ids TEXT"); } catch (e) {}
+  try { await db.execute("ALTER TABLE form_templates ADD COLUMN supervisor_id TEXT"); } catch (e) {}
 
   await db.execute(`
     CREATE TABLE IF NOT EXISTS form_responses (
