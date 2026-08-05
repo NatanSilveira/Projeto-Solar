@@ -48,14 +48,17 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       try {
         const queryParams = user?.role === 'supervisor' ? `?supervisorId=${user.id}` : user?.role === 'promoter' ? `?promoterId=${user.id}` : '';
         const formsQuery = user?.role === 'supervisor' ? `?supervisorId=${user.id}` : user?.role === 'promoter' ? `?promoterId=${user.id}` : '';
+        const t = Date.now();
+        const appendQuery = (query: string) => query ? `${query}&t=${t}` : `?t=${t}`;
+        
         const [productsRes, expirationsRes, formsRes, responsesRes, teamRes, requestsRes, storesRes] = await Promise.all([
-          fetch('/api/products'),
-          fetch(`/api/expirations${queryParams}`),
-          fetch(`/api/forms${formsQuery}`),
-          fetch(`/api/form-responses${queryParams}`),
-          fetch(`/api/team${queryParams}`),
-          fetch(`/api/requests${queryParams}`),
-          fetch(`/api/stores${queryParams}`)
+          fetch(`/api/products${appendQuery('')}`),
+          fetch(`/api/expirations${appendQuery(queryParams)}`),
+          fetch(`/api/forms${appendQuery(formsQuery)}`),
+          fetch(`/api/form-responses${appendQuery(queryParams)}`),
+          fetch(`/api/team${appendQuery(queryParams)}`),
+          fetch(`/api/requests${appendQuery(queryParams)}`),
+          fetch(`/api/stores${appendQuery(queryParams)}`)
         ]);
 
         const [pData, eData, fData, rData, tData, reqData, sData] = await Promise.all([
@@ -97,6 +100,20 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     };
 
     fetchData();
+
+    const handleFocus = () => {
+      fetchData();
+    };
+
+    window.addEventListener('focus', handleFocus);
+    
+    // Also poll every 30 seconds to ensure screens stay in sync
+    const intervalId = setInterval(fetchData, 30000);
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      clearInterval(intervalId);
+    };
   }, [user]);
 
   const calculateRisk = (expirationDate: string, quantity: number, dailyGiro: number): RiskLevel => {
@@ -202,13 +219,16 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     setFormTemplates(prev => [newTemplate, ...prev]);
 
     try {
-      await fetch('/api/forms', {
+      const response = await fetch('/api/forms', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
+      if (!response.ok) throw new Error('Falha');
     } catch (error) {
       console.error("Failed to create form template", error);
+      setFormTemplates(prev => prev.filter(f => f.id !== newTemplate.id));
+      alert('Erro ao criar formulário. Verifique sua conexão.');
     }
   };
 
@@ -237,13 +257,16 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     setFormResponses(prev => [newResponse, ...prev]);
 
     try {
-      await fetch('/api/form-responses', {
+      const res = await fetch('/api/form-responses', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newResponse)
       });
+      if (!res.ok) throw new Error('Falha');
     } catch (error) {
       console.error("Failed to submit form response", error);
+      setFormResponses(prev => prev.filter(r => r.id !== newResponse.id));
+      alert('Erro ao enviar resposta. Verifique sua conexão.');
     }
   };
 
@@ -258,7 +281,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     setRequests(prev => [newRequest, ...prev]);
 
     try {
-      await fetch('/api/requests', {
+      const response = await fetch('/api/requests', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -271,21 +294,32 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
           created_at: newRequest.date
         })
       });
+      if (!response.ok) {
+        throw new Error('Falha ao criar solicitação');
+      }
     } catch (error) {
       console.error("Failed to create request", error);
+      setRequests(prev => prev.filter(r => r.id !== newRequest.id));
+      alert('Erro ao criar solicitação. Verifique sua conexão.');
     }
   };
 
   const updateRequestStatus = async (id: string, status: 'approved' | 'rejected', rejectionReason?: string) => {
+    const prevRequest = requests.find(r => r.id === id);
     setRequests(prev => prev.map(r => r.id === id ? { ...r, status, rejectionReason } : r));
     try {
-      await fetch(`/api/requests/${id}`, {
+      const response = await fetch(`/api/requests/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status, rejectionReason })
       });
+      if (!response.ok) throw new Error('Falha');
     } catch (error) {
       console.error("Failed to update request status", error);
+      if (prevRequest) {
+        setRequests(prev => prev.map(r => r.id === id ? { ...r, status: prevRequest.status, rejectionReason: prevRequest.rejectionReason } : r));
+      }
+      alert('Erro ao atualizar. Verifique sua conexão.');
     }
   };
 
