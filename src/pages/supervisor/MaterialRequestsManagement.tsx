@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { Package, Search, Filter, CheckCircle2, XCircle, Clock, MapPin, User as UserIcon, X } from 'lucide-react';
+import { useSearch } from "../../store/SearchContext";
 import { useData } from '../../store/DataContext';
 
 export default function MaterialRequestsManagement() {
   const { requests, updateRequestStatus, team } = useData();
-  const [searchTerm, setSearchTerm] = useState('');
+  const { searchTerm, setSearchTerm } = useSearch();
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
+  const [dateFilter, setDateFilter] = useState<string>('');
   
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
@@ -16,9 +18,14 @@ export default function MaterialRequestsManagement() {
       request.store.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesStatus = statusFilter === 'all' || request.status === statusFilter;
+    let matchesDate = true;
+    if (dateFilter) {
+      const reqDate = new Date(request.createdAt).toISOString().split('T')[0];
+      matchesDate = reqDate === dateFilter;
+    }
     
-    return matchesSearch && matchesStatus;
-  });
+    return matchesSearch && matchesStatus && matchesDate;
+  }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   const handleStatusUpdate = async (id: string, status: 'approved' | 'rejected', reason?: string) => {
     await updateRequestStatus(id, status, reason);

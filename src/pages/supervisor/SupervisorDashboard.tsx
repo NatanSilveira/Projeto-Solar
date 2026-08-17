@@ -3,7 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { useData } from '../../store/DataContext';
 import { useAuth } from '../../store/AuthContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import { AlertTriangle, TrendingDown, ClipboardCheck } from 'lucide-react';
+import { AlertTriangle, TrendingDown, ClipboardCheck, Download } from 'lucide-react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 export default function SupervisorDashboard() {
   const navigate = useNavigate();
@@ -53,6 +55,9 @@ export default function SupervisorDashboard() {
     const today = new Date().toISOString().split('T')[0];
     const execToday = formResponses.filter(r => r.submittedAt.startsWith(today));
 
+    // Sort expirations by date
+    critical.sort((a, b) => new Date(a.expirationDate).getTime() - new Date(b.expirationDate).getTime());
+
     return {
       criticalItems: critical,
       warningItems: warning,
@@ -63,6 +68,35 @@ export default function SupervisorDashboard() {
       executionToday: execToday.length
     };
   }, [expirations, requests, formResponses]);
+
+  const handleExportPDF = () => {
+    const doc = new jsPDF();
+    
+    doc.setFontSize(16);
+    doc.text('Relatório de Validades Críticas', 14, 20);
+    
+    doc.setFontSize(10);
+    doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')} por ${user?.name}`, 14, 28);
+    
+    const tableData = criticalItems.map(item => [
+      item.productName,
+      item.storeName,
+      new Date(item.expirationDate).toLocaleDateString('pt-BR'),
+      item.quantity.toString(),
+      item.riskLevel === 'CRITICAL' ? 'Crítico' : 'Atenção'
+    ]);
+
+    autoTable(doc, {
+      startY: 35,
+      head: [['Produto', 'Loja', 'Data de Validade', 'Quantidade', 'Risco']],
+      body: tableData,
+      theme: 'grid',
+      headStyles: { fillColor: [227, 24, 55] }, // Coke red
+      styles: { fontSize: 9 }
+    });
+
+    doc.save(`validades_criticas_${new Date().toISOString().split('T')[0]}.pdf`);
+  };
   
   return (
     <div className="space-y-6">
@@ -186,7 +220,13 @@ export default function SupervisorDashboard() {
         <div className="bg-coke-black border border-coke-gray rounded-xl flex flex-col overflow-hidden">
           <div className="p-5 border-b border-coke-gray flex justify-between items-center">
             <h2 className="text-lg font-bold text-coke-white">Alertas Críticos Recentes</h2>
-            <button className="text-sm font-bold text-coke-white hover:text-coke-red transition-colors uppercase">Ver todos</button>
+            <button 
+              onClick={handleExportPDF}
+              className="flex items-center gap-2 text-sm font-bold text-coke-white bg-coke-gray px-3 py-1.5 rounded-lg hover:bg-coke-red transition-colors"
+            >
+              <Download className="w-4 h-4" />
+              <span>Baixar PDF</span>
+            </button>
           </div>
           <div className="flex-1 overflow-y-auto p-2">
             {criticalItems.slice(0, 10).map(item => (

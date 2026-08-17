@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../store/AuthContext';
+import { useSearch } from '../store/SearchContext';
 import { 
   LogOut, 
   LayoutDashboard, 
@@ -11,19 +12,52 @@ import {
   Menu,
   X,
   Search,
-  Store
+  Store,
+  Camera
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 export default function Layout() {
-  const { user, logout } = useAuth();
+  const { user, logout, updateUser } = useAuth();
+  const { searchTerm, setSearchTerm } = useSearch();
   const navigate = useNavigate();
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleLogout = () => {
     logout();
     navigate('/login');
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Por favor, selecione uma imagem.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const base64String = event.target?.result as string;
+      try {
+        const res = await fetch(`/api/users/${user.id}/avatar`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ avatar: base64String })
+        });
+        if (res.ok) {
+          updateUser({ ...user, avatar: base64String });
+        } else {
+          alert('Falha ao atualizar foto de perfil.');
+        }
+      } catch (error) {
+        console.error("Avatar upload failed", error);
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   const promoterLinks = [
@@ -134,7 +168,9 @@ export default function Layout() {
             </div>
             <input 
               type="text" 
-              className="bg-coke-gray border-none py-2 pl-10 pr-4 rounded-full text-coke-white w-[300px] outline-none text-sm placeholder-text-dim focus:ring-1 focus:ring-coke-red"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="bg-coke-gray border-none py-2 pl-10 pr-4 rounded-full text-coke-white w-[300px] outline-none text-sm placeholder-text-dim focus:ring-1 focus:ring-coke-red transition-all"
               placeholder="Buscar Loja, SKU ou Promotor..."
             />
           </div>
@@ -145,9 +181,22 @@ export default function Layout() {
                 {user?.role === 'supervisor' ? 'Supervisor Regional' : 'Promotor'}
               </span>
             </div>
-            <div className="w-8 h-8 rounded-full bg-coke-gray border border-coke-red overflow-hidden">
+            <div 
+              className="w-10 h-10 rounded-full bg-coke-gray border-2 border-coke-red overflow-hidden relative group cursor-pointer"
+              onClick={() => fileInputRef.current?.click()}
+            >
               {user?.avatar && <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />}
+              <div className="absolute inset-0 bg-black/50 hidden group-hover:flex items-center justify-center transition-all">
+                <Camera className="w-4 h-4 text-white" />
+              </div>
             </div>
+            <input 
+              type="file" 
+              ref={fileInputRef}
+              className="hidden"
+              accept="image/*"
+              onChange={handleAvatarUpload}
+            />
             <button onClick={handleLogout} className="ml-2 text-text-dim hover:text-coke-red transition-colors" title="Sair">
               <LogOut className="w-5 h-5" />
             </button>

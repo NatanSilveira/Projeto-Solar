@@ -6,6 +6,7 @@ interface AuthContextType {
   login: (email: string, role: 'promoter' | 'supervisor', password?: string) => Promise<User>;
   register: (name: string, email: string, role: 'promoter' | 'supervisor', password?: string, supervisorId?: string, storeId?: string) => Promise<User>;
   logout: () => void;
+  updateUser: (user: User) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -71,8 +72,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem('solar_user');
   };
 
+  const updateUser = (updatedUser: User) => {
+    setUser(updatedUser);
+    localStorage.setItem('solar_user', JSON.stringify(updatedUser));
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, register, logout }}>
+    <AuthContext.Provider value={{ user, login, register, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

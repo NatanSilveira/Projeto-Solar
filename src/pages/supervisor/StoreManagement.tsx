@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Store as StoreIcon, Plus, Trash2, MapPin, Search, X } from 'lucide-react';
+import { useSearch } from "../../store/SearchContext";
 import { useData } from '../../store/DataContext';
 import { useAuth } from '../../store/AuthContext';
 
@@ -7,7 +8,7 @@ export default function StoreManagement() {
   const { stores, addStore, deleteStore } = useData();
   const { user } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
+  const { searchTerm, setSearchTerm } = useSearch();
   
   // New Store State
   const [newName, setNewName] = useState('');

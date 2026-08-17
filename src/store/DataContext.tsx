@@ -15,6 +15,7 @@ interface DataContextType {
   updateExpiration: (id: string, updates: Partial<ExpirationRecord>) => Promise<void>;
   deleteExpiration: (id: string) => Promise<void>;
   addProduct: (product: Omit<Product, 'id'>) => Promise<Product>;
+  editProduct: (id: string, product: Partial<Product>) => Promise<void>;
   addFormTemplate: (template: Omit<FormTemplate, 'id' | 'createdAt' | 'lastUpdated' | 'responsesCount'>) => Promise<void>;
   deleteFormTemplate: (id: string) => Promise<void>;
   addFormResponse: (response: Omit<FormResponse, 'id' | 'submittedAt'>) => Promise<void>;
@@ -94,8 +95,11 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         } else {
           setRequests([]);
         }
-      } catch (err) {
-        console.error("Failed to fetch initial data", err);
+      } catch (err: any) {
+        // Suppress network errors during polling to prevent console pollution
+        if (err.message !== "Failed to fetch") {
+          console.error("Failed to fetch initial data", err);
+        }
       }
     };
 
@@ -152,6 +156,25 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       console.error("Failed to save product to database", error);
       // Revert optimistic update on error
       setProducts(prev => prev.filter(p => p.id !== newProduct.id));
+      throw error;
+    }
+  };
+
+  const editProduct = async (id: string, updates: Partial<Product>) => {
+    // Optimistic update
+    setProducts(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p));
+    
+    try {
+      const response = await fetch(`/api/products/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates)
+      });
+      if (!response.ok) {
+        throw new Error('Failed to update product');
+      }
+    } catch (error) {
+      console.error("Failed to edit product", error);
       throw error;
     }
   };
@@ -428,6 +451,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       updateExpiration,
       deleteExpiration,
       addProduct,
+      editProduct,
       addFormTemplate,
       deleteFormTemplate,
       addFormResponse,

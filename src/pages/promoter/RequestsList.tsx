@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { MessageSquare, Plus, Search, Clock, CheckCircle, AlertCircle, X } from 'lucide-react';
+import { useSearch } from "../../store/SearchContext";
 import { useData } from '../../store/DataContext';
 import { MaterialRequest } from '../../types';
 import { useAuth } from '../../store/AuthContext';
@@ -7,7 +8,8 @@ import { useAuth } from '../../store/AuthContext';
 export default function RequestsList() {
   const { requests, addRequest, updateRequestStatus, team, stores } = useData();
   const { user } = useAuth();
-  const [searchTerm, setSearchTerm] = useState('');
+  const { searchTerm, setSearchTerm } = useSearch();
+  const [dateFilter, setDateFilter] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<MaterialRequest | null>(null);
 
@@ -29,9 +31,15 @@ export default function RequestsList() {
     const matchesSearch = req.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          req.store.toLowerCase().includes(searchTerm.toLowerCase());
     
-    if (isSupervisor) return matchesSearch;
-    return matchesSearch && req.promoterId === user?.id;
-  });
+    let matchesDate = true;
+    if (dateFilter) {
+      const reqDate = new Date(req.createdAt).toISOString().split('T')[0];
+      matchesDate = reqDate === dateFilter;
+    }
+
+    if (isSupervisor) return matchesSearch && matchesDate;
+    return matchesSearch && matchesDate && req.promoterId === user?.id;
+  }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   const getPromoterName = (id: string) => {
     return team.find(t => t.id === id)?.name || id;
@@ -46,7 +54,7 @@ export default function RequestsList() {
       store: storeName,
       description,
       promoterId: user.id
-    });
+    }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
     setIsModalOpen(false);
     setDescription('');
@@ -108,17 +116,27 @@ export default function RequestsList() {
       {/* Requests List */}
       <div className="bg-coke-black border border-coke-gray rounded-xl overflow-hidden flex flex-col">
         <div className="p-5 border-b border-coke-gray">
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="h-5 w-5 text-text-dim" />
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="relative flex-1">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search className="h-5 w-5 text-text-dim" />
+              </div>
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="block w-full pl-10 pr-3 py-3 border-none rounded-xl focus:ring-1 focus:ring-coke-red sm:text-sm bg-coke-gray text-coke-white placeholder-text-dim outline-none"
+                placeholder="Buscar por tipo ou loja..."
+              />
             </div>
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="block w-full pl-10 pr-3 py-3 border-none rounded-xl focus:ring-1 focus:ring-coke-red sm:text-sm bg-coke-gray text-coke-white placeholder-text-dim outline-none"
-              placeholder="Buscar por tipo ou loja..."
-            />
+            <div>
+              <input
+                type="date"
+                value={dateFilter}
+                onChange={(e) => setDateFilter(e.target.value)}
+                className="block w-full px-3 py-3 border-none rounded-xl focus:ring-1 focus:ring-coke-red sm:text-sm bg-coke-gray text-text-dim outline-none"
+              />
+            </div>
           </div>
         </div>
 

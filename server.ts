@@ -50,7 +50,8 @@ async function ensureTables(db: Client) {
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
       barcode TEXT UNIQUE NOT NULL,
-      category TEXT
+      category TEXT,
+      price REAL
     )
   `);
 
@@ -121,6 +122,7 @@ async function ensureTables(db: Client) {
   `);
 
   try { await db.execute("ALTER TABLE stores ADD COLUMN supervisor_id TEXT"); } catch (e) {}
+  try { await db.execute("ALTER TABLE products ADD COLUMN price REAL"); } catch (e) {}
 
   console.log("Database schema is up to date.");
 }
@@ -220,17 +222,36 @@ async function startServer() {
   // Add Product
   app.post("/api/products", async (req, res) => {
     try {
-      const { id, name, barcode, category } = req.body;
+      const { id, name, barcode, category, price } = req.body;
       const db = getTursoClient();
       
       await db.execute({
-        sql: "INSERT INTO products (id, name, barcode, category) VALUES (?, ?, ?, ?)",
-        args: [id, name, barcode, category || 'Outros']
+        sql: "INSERT INTO products (id, name, barcode, category, price) VALUES (?, ?, ?, ?, ?)",
+        args: [id, name, barcode, category || 'Outros', price || 0]
       });
       
-      res.status(201).json({ success: true, product: { id, name, barcode, category: category || 'Outros' } });
+      res.status(201).json({ success: true, product: { id, name, barcode, category: category || 'Outros', price: price || 0 } });
     } catch (error) {
       console.error("Error adding product:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Edit Product
+  app.put("/api/products/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { name, barcode, category, price } = req.body;
+      const db = getTursoClient();
+      
+      await db.execute({
+        sql: "UPDATE products SET name = ?, barcode = ?, category = ?, price = ? WHERE id = ?",
+        args: [name, barcode, category, price || 0, id]
+      });
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error editing product:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   });
@@ -698,6 +719,25 @@ async function startServer() {
       res.json({ success: true });
     } catch (error) {
       console.error("Error resetting password:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Update Avatar
+  app.patch("/api/users/:id/avatar", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { avatar } = req.body;
+      const db = getTursoClient();
+      
+      await db.execute({
+        sql: "UPDATE users SET avatar = ? WHERE id = ?",
+        args: [avatar, id]
+      });
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error updating avatar:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   });

@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, FileText, ChevronRight, CheckCircle, Clock } from 'lucide-react';
+import { useSearch } from "../../store/SearchContext";
 import { useData } from '../../store/DataContext';
 import { useAuth } from '../../store/AuthContext';
 
 export default function FormsList() {
   const { formTemplates, formResponses } = useData();
   const { user } = useAuth();
-  const [searchTerm, setSearchTerm] = useState('');
+  const { searchTerm, setSearchTerm } = useSearch();
   const navigate = useNavigate();
 
   const filteredForms = formTemplates.filter(form => {

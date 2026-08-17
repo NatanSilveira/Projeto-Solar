@@ -1,15 +1,18 @@
 import React, { useState } from 'react';
-import { FileText, Plus, Search, CheckCircle, Clock, X, Trash2 } from 'lucide-react';
+import { FileText, Plus, Search, CheckCircle, Clock, X, Trash2, Download } from 'lucide-react';
+import * as XLSX from 'xlsx';
+import { useSearch } from "../../store/SearchContext";
 import { useData } from '../../store/DataContext';
 import { FormQuestion, QuestionType } from '../../types';
 
 export default function FormsManagement() {
   const { formTemplates, addFormTemplate, deleteFormTemplate, formResponses, team } = useData();
-  const [searchTerm, setSearchTerm] = useState('');
+  const { searchTerm, setSearchTerm } = useSearch();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isResultsModalOpen, setIsResultsModalOpen] = useState(false);
   const [selectedFormForResults, setSelectedFormForResults] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [dateFilter, setDateFilter] = useState('');
   
   // New Form State
   const [newTitle, setNewTitle] = useState('');
@@ -17,6 +20,49 @@ export default function FormsManagement() {
   const [questions, setQuestions] = useState<FormQuestion[]>([]);
   const [targetType, setTargetType] = useState<'all' | 'specific'>('all');
   const [selectedPromoterIds, setSelectedPromoterIds] = useState<string[]>([]);
+
+  const handleExportExcel = () => {
+    if (!selectedFormForResults) return;
+    const template = formTemplates.find(f => f.id === selectedFormForResults);
+    if (!template) return;
+
+    const responsesForForm = formResponses.filter(r => {
+      if (r.formId !== selectedFormForResults) return false;
+      if (dateFilter) {
+        const reqDate = new Date(r.submittedAt).toISOString().split('T')[0];
+        if (reqDate !== dateFilter) return false;
+      }
+      return true;
+    }).sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime());
+    
+    // Prepare Data for Excel
+    const data = responsesForForm.map(response => {
+      const promoter = team.find(t => t.id === response.promoterId);
+      const row: any = {
+        'Loja': response.storeName,
+        'Promotor': promoter?.name || response.promoterId,
+        'Data de Envio': new Date(response.submittedAt).toLocaleString('pt-BR')
+      };
+
+      template.questions.forEach(q => {
+        let answer = response.answers[q.id];
+        if (q.type === 'boolean') {
+          answer = answer ? 'SIM' : 'NÃO';
+        } else if (q.type === 'photo') {
+          answer = answer ? 'FOTO ENVIADA (Base64)' : 'SEM FOTO';
+        }
+        row[q.label] = answer || '-';
+      });
+
+      return row;
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Respostas');
+    
+    XLSX.writeFile(workbook, `respostas_${template.title.replace(/\s+/g, '_')}_${new Date().getTime()}.xlsx`);
+  };
 
   const handleDeleteForm = async (id: string) => {
     if (deletingId === id) {
@@ -401,22 +447,45 @@ export default function FormsManagement() {
       {isResultsModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
           <div className="bg-coke-black border border-coke-gray w-full max-w-4xl rounded-2xl flex flex-col max-h-[90vh]">
-            <div className="p-6 border-b border-coke-gray flex justify-between items-center bg-coke-darker rounded-t-2xl">
+            <div className="p-6 border-b border-coke-gray flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-4 bg-coke-darker rounded-t-2xl">
               <div>
                 <h2 className="text-xl font-bold text-coke-white">
                   Respostas: {formTemplates.find(f => f.id === selectedFormForResults)?.title}
                 </h2>
                 <p className="text-sm text-text-dim">Acompanhe as coletas realizadas em campo.</p>
               </div>
-              <button onClick={() => setIsResultsModalOpen(false)} className="p-2 hover:bg-coke-gray rounded-full transition-colors text-text-dim">
-                <X className="w-5 h-5" />
-              </button>
+              <div className="flex items-center gap-4 w-full sm:w-auto">
+                <input
+                  type="date"
+                  value={dateFilter}
+                  onChange={(e) => setDateFilter(e.target.value)}
+                  className="px-3 py-2 bg-coke-black border border-coke-gray rounded-lg text-sm text-coke-white focus:outline-none focus:border-coke-red"
+                />
+                <button 
+                  onClick={handleExportExcel}
+                  className="flex items-center gap-2 text-sm font-bold text-coke-white bg-success px-4 py-2 rounded-lg hover:bg-success/80 transition-colors"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>Exportar</span>
+                </button>
+                <button onClick={() => { setIsResultsModalOpen(false); setDateFilter(''); }} className="p-2 hover:bg-coke-gray rounded-full transition-colors text-text-dim">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
 
             <div className="p-6 overflow-y-auto flex-1">
               <div className="space-y-4">
                 {formResponses
-                  .filter(r => r.formId === selectedFormForResults)
+                  .filter(r => {
+                    if (r.formId !== selectedFormForResults) return false;
+                    if (dateFilter) {
+                      const reqDate = new Date(r.submittedAt).toISOString().split('T')[0];
+                      if (reqDate !== dateFilter) return false;
+                    }
+                    return true;
+                  })
+                  .sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime())
                   .map(response => {
                     const template = formTemplates.find(t => t.id === response.formId);
                     return (

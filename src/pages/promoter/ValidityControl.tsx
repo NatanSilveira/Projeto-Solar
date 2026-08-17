@@ -1,17 +1,19 @@
 import React, { useState, Suspense, lazy } from 'react';
+import { useSearch } from "../../store/SearchContext";
 import { useData } from '../../store/DataContext';
 import { useAuth } from '../../store/AuthContext';
 import { ExpirationRecord } from '../../types';
-import { Camera, Search, Plus, AlertCircle, PackagePlus } from 'lucide-react';
+import { Camera, Search, Plus, AlertCircle, PackagePlus, Edit2 } from 'lucide-react';
+import EditProductModal from '../../components/EditProductModal';
 
 // Lazy loading the scanner because it uses browser APIs that might be heavy
 const BarcodeScanner = lazy(() => import('../../components/BarcodeScanner'));
 
 export default function ValidityControl() {
-  const { products, expirations, addExpiration, updateExpiration, deleteExpiration, addProduct, calculateRisk, stores } = useData();
+  const { products, expirations, addExpiration, updateExpiration, deleteExpiration, addProduct, editProduct, calculateRisk, stores } = useData();
   const { user } = useAuth();
   
-  const [searchTerm, setSearchTerm] = useState('');
+  const { searchTerm, setSearchTerm } = useSearch();
   const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
   const [selectedStoreId, setSelectedStoreId] = useState('');
   const [expirationDate, setExpirationDate] = useState('');
@@ -33,6 +35,7 @@ export default function ValidityControl() {
 
   // Edit State
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [productToEdit, setProductToEdit] = useState<any>(null);
 
   const filteredProducts = products.filter(p => 
     p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -223,18 +226,30 @@ export default function ValidityControl() {
             {searchTerm && !selectedProduct && (
               <div className="mt-2 border border-coke-gray rounded-xl overflow-hidden bg-coke-black max-h-64 overflow-y-auto">
                 {filteredProducts.map(product => (
-                  <button
-                    key={product.id}
-                    type="button"
-                    onClick={() => {
-                      setSelectedProduct(product.id);
-                      setSearchTerm(product.name);
-                    }}
-                    className="w-full text-left px-4 py-3 hover:bg-coke-gray border-b border-coke-gray last:border-0"
-                  >
-                    <p className="text-sm font-medium text-coke-white">{product.name}</p>
-                    <p className="text-xs text-text-dim">{product.barcode}</p>
-                  </button>
+                  <div key={product.id} className="flex items-center hover:bg-coke-gray border-b border-coke-gray last:border-0 pr-4">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedProduct(product.id);
+                        setSearchTerm(product.name);
+                      }}
+                      className="flex-1 text-left px-4 py-3"
+                    >
+                      <p className="text-sm font-medium text-coke-white">{product.name}</p>
+                      <p className="text-xs text-text-dim">{product.barcode} {product.price ? `- R$ ${product.price.toFixed(2)}` : ''}</p>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setProductToEdit(product);
+                      }}
+                      className="p-2 text-text-dim hover:text-coke-red transition-colors"
+                      title="Editar Produto"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 ))}
                 
                 {filteredProducts.length === 0 && (
@@ -413,6 +428,14 @@ export default function ValidityControl() {
           )}
         </div>
       </div>
+
+      {productToEdit && (
+        <EditProductModal
+          product={productToEdit}
+          onClose={() => setProductToEdit(null)}
+          onSave={editProduct}
+        />
+      )}
     </div>
   );
 }

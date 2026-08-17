@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './store/AuthContext';
 import { DataProvider } from './store/DataContext';
+import { SearchProvider } from './store/SearchContext';
 import Layout from './components/Layout';
 import Login from './pages/Login';
 import PromoterDashboard from './pages/promoter/PromoterDashboard';
@@ -64,9 +65,11 @@ export default function App() {
   return (
     <AuthProvider>
       <DataProvider>
-        <BrowserRouter>
-          <AppRoutes />
-        </BrowserRouter>
+        <SearchProvider>
+          <BrowserRouter>
+            <AppRoutes />
+          </BrowserRouter>
+        </SearchProvider>
       </DataProvider>
     </AuthProvider>
   );

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Users, UserPlus, Search, MapPin, Activity, X, Trash2 } from 'lucide-react';
+import { useSearch } from "../../store/SearchContext";
 import { useData } from '../../store/DataContext';
 import { useAuth } from '../../store/AuthContext';
 import { User } from '../../types';
@@ -7,7 +8,7 @@ import { User } from '../../types';
 export default function TeamManagement() {
   const { team, formResponses, updateUserStatus, deleteUser, stores, addTeamMember, editUser, resetUserPassword } = useData();
   const { user } = useAuth();
-  const [searchTerm, setSearchTerm] = useState('');
+  const { searchTerm, setSearchTerm } = useSearch();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedPromoter, setSelectedPromoter] = useState<User | null>(null);

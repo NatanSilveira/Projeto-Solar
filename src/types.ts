@@ -18,6 +18,7 @@ export interface Product {
   name: string;
   barcode: string;
   category: string;
+  price?: number;
 }
 
 export type RiskLevel = 'SAFE' | 'WARNING' | 'CRITICAL';
