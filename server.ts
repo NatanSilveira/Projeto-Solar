@@ -139,7 +139,7 @@ async function startServer() {
     console.error("Failed to initialize database tables on startup:", err);
   }
 
-  app.use(express.json());
+  app.use(express.json({ limit: '10mb' }));
 
   // Prevent caching for API routes
   app.use("/api", (req, res, next) => {
@@ -244,9 +244,20 @@ async function startServer() {
       const { name, barcode, category, price } = req.body;
       const db = getTursoClient();
       
+      // se a categoria não for enviada, precisamos manter a existente para não dar erro
+      let updateCategory = category;
+      if (updateCategory === undefined) {
+         // fetch existing
+         const res = await db.execute({
+           sql: "SELECT category FROM products WHERE id = ?",
+           args: [id]
+         });
+         updateCategory = res.rows[0]?.category || 'Outros';
+      }
+
       await db.execute({
         sql: "UPDATE products SET name = ?, barcode = ?, category = ?, price = ? WHERE id = ?",
-        args: [name, barcode, category, price || 0, id]
+        args: [name, barcode, updateCategory, price || 0, id]
       });
       
       res.json({ success: true });

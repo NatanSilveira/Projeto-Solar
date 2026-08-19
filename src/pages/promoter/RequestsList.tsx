@@ -54,7 +54,7 @@ export default function RequestsList() {
       store: storeName,
       description,
       promoterId: user.id
-    }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    });
 
     setIsModalOpen(false);
     setDescription('');
