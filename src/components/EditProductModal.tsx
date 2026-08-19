@@ -9,10 +9,17 @@ interface EditProductModalProps {
   onSave: (id: string, updates: Partial<Product>) => Promise<void>;
 }
 
+const formatCurrency = (value: string) => {
+  let val = value.replace(/\D/g, '');
+  if (val === '') return '';
+  const floatVal = parseFloat(val) / 100;
+  return floatVal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+};
+
 export default function EditProductModal({ product, onClose, onSave }: EditProductModalProps) {
   const [name, setName] = useState(product.name);
   const [barcode, setBarcode] = useState(product.barcode);
-  const [price, setPrice] = useState(product.price?.toString() || '');
+  const [price, setPrice] = useState(product.price ? formatCurrency((product.price * 100).toString()) : '');
   const [isSaving, setIsSaving] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -22,7 +29,7 @@ export default function EditProductModal({ product, onClose, onSave }: EditProdu
       await onSave(product.id, { 
         name, 
         barcode, 
-        price: parseFloat(price) || 0 
+        price: price ? parseFloat(price.replace(/\D/g, '')) / 100 : 0 
       });
       onClose();
     } catch (error) {
@@ -66,10 +73,10 @@ export default function EditProductModal({ product, onClose, onSave }: EditProdu
             <div>
               <label className="block text-sm font-medium text-text-dim mb-1">Preço (Opcional)</label>
               <input
-                type="number"
-                step="0.01"
+                type="text"
+                placeholder="R$ 0,00"
                 value={price}
-                onChange={(e) => setPrice(e.target.value)}
+                onChange={(e) => setPrice(formatCurrency(e.target.value))}
                 className="w-full px-4 py-3 bg-coke-gray border-none rounded-xl text-coke-white outline-none focus:ring-1 focus:ring-coke-red"
               />
             </div>

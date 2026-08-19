@@ -22,7 +22,7 @@ interface DataContextType {
   addRequest: (request: Omit<MaterialRequest, 'id' | 'status' | 'date'>) => Promise<void>;
   updateRequestStatus: (id: string, status: 'approved' | 'rejected', rejectionReason?: string) => Promise<void>;
   updateUserStatus: (id: string, status: User['status']) => Promise<void>;
-  editUser: (id: string, name: string, email: string) => Promise<void>;
+  editUser: (id: string, name: string, email: string, storeId?: string) => Promise<void>;
   resetUserPassword: (id: string, password: string) => Promise<void>;
   deleteUser: (id: string) => Promise<void>;
   addTeamMember: (member: User) => void;
@@ -359,13 +359,13 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const editUser = async (id: string, name: string, email: string) => {
-    setTeam(prev => prev.map(u => u.id === id ? { ...u, name, email } : u));
+  const editUser = async (id: string, name: string, email: string, storeId?: string) => {
+    setTeam(prev => prev.map(u => u.id === id ? { ...u, name, email, storeId } : u));
     try {
       await fetch(`/api/users/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email })
+        body: JSON.stringify({ name, email, storeId })
       });
     } catch (error) {
       console.error("Failed to edit user", error);

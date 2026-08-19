@@ -24,6 +24,7 @@ export default function TeamManagement() {
   const [isResetPasswordModalOpen, setIsResetPasswordModalOpen] = useState(false);
   const [editName, setEditName] = useState('');
   const [editEmail, setEditEmail] = useState('');
+  const [editStoreId, setEditStoreId] = useState('');
   const [resetPasswordValue, setResetPasswordValue] = useState('');
 
 
@@ -31,15 +32,16 @@ export default function TeamManagement() {
   const handleOpenEdit = (promoter: User) => {
     setEditName(promoter.name);
     setEditEmail(promoter.email);
+    setEditStoreId(promoter.storeId || '');
     setIsEditModalOpen(true);
   };
 
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (selectedPromoter) {
-      await editUser(selectedPromoter.id, editName, editEmail);
+      await editUser(selectedPromoter.id, editName, editEmail, editStoreId || undefined);
       setIsEditModalOpen(false);
-      setSelectedPromoter({ ...selectedPromoter, name: editName, email: editEmail });
+      setSelectedPromoter({ ...selectedPromoter, name: editName, email: editEmail, storeId: editStoreId || undefined });
     }
   };
 
@@ -483,6 +485,22 @@ export default function TeamManagement() {
                   onChange={(e) => setEditEmail(e.target.value)}
                   className="w-full bg-coke-darker border border-coke-gray rounded-xl p-4 text-coke-white focus:ring-1 focus:ring-coke-red outline-none"
                 />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[11px] font-bold text-coke-white uppercase tracking-widest pl-1">Vincular à Loja</label>
+                <select 
+                  value={editStoreId}
+                  onChange={(e) => setEditStoreId(e.target.value)}
+                  className="w-full bg-coke-darker border border-coke-gray rounded-xl p-4 text-coke-white focus:ring-1 focus:ring-coke-red outline-none appearance-none"
+                >
+                  <option value="">Selecione uma loja (Opcional)</option>
+                  {stores.map(store => (
+                    <option key={store.id} value={store.id}>
+                      {store.name}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div className="flex gap-3 pt-4">

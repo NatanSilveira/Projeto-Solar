@@ -71,6 +71,7 @@ export default function ValidityControl() {
       });
       setSelectedProduct(newProduct.id);
       setSearchTerm(newProduct.name);
+      setProductToEdit(newProduct);
     } catch (error) {
       alert('Erro ao adicionar produto.');
     } finally {
@@ -213,14 +214,25 @@ export default function ValidityControl() {
                   placeholder="Ex: Coca-Cola 2L ou 789..."
                 />
               </div>
-              <button
-                type="button"
-                onClick={() => setIsScanning(true)}
-                className="px-4 py-3 rounded-xl bg-coke-red text-white hover:bg-coke-red/80 transition-colors focus:ring-2 focus:ring-offset-2 focus:ring-offset-coke-black focus:ring-coke-red"
-                title="Escanear Código de Barras"
-              >
-                <Camera className="w-5 h-5" />
-              </button>
+              {selectedProduct ? (
+                <button
+                  type="button"
+                  onClick={() => setProductToEdit(products.find(p => p.id === selectedProduct))}
+                  className="px-4 py-3 rounded-xl bg-coke-gray text-white hover:bg-coke-gray/80 transition-colors"
+                  title="Editar Produto Selecionado"
+                >
+                  <Edit2 className="w-5 h-5" />
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setIsScanning(true)}
+                  className="px-4 py-3 rounded-xl bg-coke-red text-white hover:bg-coke-red/80 transition-colors"
+                  title="Escanear Código de Barras"
+                >
+                  <Camera className="w-5 h-5" />
+                </button>
+              )}
             </div>
 
             {searchTerm && !selectedProduct && (

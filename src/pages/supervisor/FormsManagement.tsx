@@ -28,10 +28,6 @@ export default function FormsManagement() {
 
     const responsesForForm = formResponses.filter(r => {
       if (r.formId !== selectedFormForResults) return false;
-      if (dateFilter) {
-        const reqDate = new Date(r.submittedAt).toISOString().split('T')[0];
-        if (reqDate !== dateFilter) return false;
-      }
       return true;
     }).sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime());
     
@@ -73,10 +69,19 @@ export default function FormsManagement() {
     }
   };
 
-  const filteredForms = formTemplates.filter(form => 
-    form.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    form.description.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredForms = formTemplates.filter(form => {
+    const matchesSearch = form.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          form.description.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    if (!matchesSearch) return false;
+    
+    if (dateFilter) {
+      const formDate = new Date(form.createdAt).toISOString().split('T')[0];
+      if (formDate !== dateFilter) return false;
+    }
+    
+    return true;
+  });
 
   const addQuestion = () => {
     const newQuestion: FormQuestion = {
@@ -184,8 +189,8 @@ export default function FormsManagement() {
 
       {/* Forms List Section */}
       <div className="bg-coke-black border border-coke-gray rounded-xl overflow-hidden">
-        <div className="p-5 border-b border-coke-gray">
-          <div className="relative max-w-md">
+        <div className="p-5 border-b border-coke-gray flex flex-col sm:flex-row gap-4 items-center justify-between">
+          <div className="relative max-w-md w-full">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <Search className="h-5 w-5 text-text-dim" />
             </div>
@@ -195,6 +200,15 @@ export default function FormsManagement() {
               onChange={(e) => setSearchTerm(e.target.value)}
               className="block w-full pl-10 pr-3 py-2 border-none rounded-xl focus:ring-1 focus:ring-coke-red sm:text-sm bg-coke-gray text-coke-white placeholder-text-dim outline-none"
               placeholder="Buscar formulários..."
+            />
+          </div>
+          
+          <div className="w-full sm:w-auto">
+            <input
+              type="date"
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)}
+              className="px-3 py-2 bg-coke-gray border-none rounded-xl text-sm text-coke-white focus:outline-none focus:ring-1 focus:ring-coke-red w-full sm:w-auto"
             />
           </div>
         </div>
@@ -455,12 +469,6 @@ export default function FormsManagement() {
                 <p className="text-sm text-text-dim">Acompanhe as coletas realizadas em campo.</p>
               </div>
               <div className="flex items-center gap-4 w-full sm:w-auto">
-                <input
-                  type="date"
-                  value={dateFilter}
-                  onChange={(e) => setDateFilter(e.target.value)}
-                  className="px-3 py-2 bg-coke-black border border-coke-gray rounded-lg text-sm text-coke-white focus:outline-none focus:border-coke-red"
-                />
                 <button 
                   onClick={handleExportExcel}
                   className="flex items-center gap-2 text-sm font-bold text-coke-white bg-success px-4 py-2 rounded-lg hover:bg-success/80 transition-colors"

@@ -30,16 +30,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (!response.ok) {
-        throw new Error('Login failed');
+        const errData = await response.json();
+        throw new Error(errData.error || 'Login failed');
       }
 
       const userData = await response.json();
       setUser(userData);
       localStorage.setItem('solar_user', JSON.stringify(userData));
       return userData; // Return so caller knows the TRUE role
-    } catch (error) {
+    } catch (error: any) {
       console.error('Login error:', error);
-      alert('Falha no login. Verifique as credenciais.');
+      alert(error.message || 'Falha no login. Verifique as credenciais.');
       throw error;
     }
   };
@@ -53,16 +54,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (!response.ok) {
-        throw new Error('Registration failed');
+        const errData = await response.json();
+        throw new Error(errData.error || 'Registration failed');
       }
 
       const userData = await response.json();
       setUser(userData);
       localStorage.setItem('solar_user', JSON.stringify(userData));
       return userData;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Registration error:', error);
-      alert('Falha no cadastro. Verifique as informações.');
+      alert(error.message || 'Falha no cadastro. Verifique as informações.');
       throw error;
     }
   };

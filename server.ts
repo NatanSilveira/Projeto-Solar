@@ -689,12 +689,12 @@ async function startServer() {
   app.put("/api/users/:id", async (req, res) => {
     try {
       const { id } = req.params;
-      const { name, email } = req.body;
+      const { name, email, storeId } = req.body;
       const db = getTursoClient();
       
       await db.execute({
-        sql: "UPDATE users SET name = ?, email = ? WHERE id = ?",
-        args: [name, email.toLowerCase(), id]
+        sql: "UPDATE users SET name = ?, email = ?, store_id = ? WHERE id = ?",
+        args: [name, email.toLowerCase(), storeId || null, id]
       });
       
       res.json({ success: true });
