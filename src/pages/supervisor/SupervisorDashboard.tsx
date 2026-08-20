@@ -25,7 +25,7 @@ export default function SupervisorDashboard() {
   }, []);
 
   // Compute live KPIs based on database data
-  const { criticalItems, warningItems, safeItems, storeData, potentialLoss, pendingRequests, executionToday } = useMemo(() => {
+  const { criticalItems, warningItems, alertItems, safeItems, storeData, potentialLoss, pendingRequests, executionToday } = useMemo(() => {
     const critical = [];
     const warning = [];
     const safe = [];
@@ -68,10 +68,13 @@ export default function SupervisorDashboard() {
 
     // Sort expirations by date
     critical.sort((a, b) => new Date(a.expirationDate).getTime() - new Date(b.expirationDate).getTime());
+    warning.sort((a, b) => new Date(a.expirationDate).getTime() - new Date(b.expirationDate).getTime());
+    const alerts = [...critical, ...warning];
 
     return {
       criticalItems: critical,
       warningItems: warning,
+      alertItems: alerts,
       safeItems: safe,
       storeData: Object.values(storeMap).sort((a, b) => (b.critical + b.warning) - (a.critical + a.warning)).slice(0, 5),
       potentialLoss: loss,
@@ -159,11 +162,13 @@ export default function SupervisorDashboard() {
 
         <div className="bg-coke-black border border-coke-gray rounded-xl p-4 md:p-5 flex flex-col justify-between min-w-0">
           <div>
-            <div className="text-[10px] md:text-xs text-text-dim mb-1 md:mb-2 uppercase tracking-wide truncate">SKUs Críticos</div>
-            <div className="text-xl md:text-2xl font-bold text-danger truncate">{criticalItems.length}</div>
+            <div className="text-[10px] md:text-xs text-text-dim mb-1 md:mb-2 uppercase tracking-wide truncate">SKUs em Alerta</div>
+            <div className="text-xl md:text-2xl font-bold text-danger truncate">{criticalItems.length + warningItems.length}</div>
           </div>
-          <div className="text-[10px] md:text-xs mt-2 flex items-center gap-1 text-text-dim truncate">
-            <span>Risco de vencimento</span>
+          <div className="text-[10px] md:text-xs mt-2 flex items-center gap-1.5 text-text-dim truncate">
+            <span className="text-danger font-medium">{criticalItems.length} críticos</span>
+            <span>•</span>
+            <span className="text-warning font-medium">{warningItems.length} atenção</span>
           </div>
         </div>
 
@@ -254,40 +259,56 @@ export default function SupervisorDashboard() {
           </div>
         </div>
 
-        {/* Critical Alerts List */}
+        {/* Alerts List */}
         <div className="bg-coke-black border border-coke-gray rounded-xl flex flex-col overflow-hidden">
           <div className="p-5 border-b border-coke-gray flex justify-between items-center">
-            <h2 className="text-lg font-bold text-coke-white">Alertas Críticos Recentes</h2>
+            <div>
+              <h2 className="text-lg font-bold text-coke-white">Alertas de Validade</h2>
+              <p className="text-xs text-text-dim mt-0.5">Produtos em estado crítico e de atenção</p>
+            </div>
             <button 
               onClick={handleExportPDF}
-              className="flex items-center gap-2 text-sm font-bold text-coke-white bg-coke-gray px-3 py-1.5 rounded-lg hover:bg-coke-red transition-colors"
+              className="flex items-center gap-2 text-sm font-bold text-coke-white bg-coke-gray px-3 py-1.5 rounded-lg hover:bg-coke-red transition-colors shrink-0"
             >
               <Download className="w-4 h-4" />
               <span>Baixar PDF</span>
             </button>
           </div>
           <div className="flex-1 overflow-y-auto p-2">
-            {criticalItems.slice(0, 10).map(item => (
+            {alertItems.slice(0, 15).map(item => (
               <div key={item.id} className="p-4 hover:bg-coke-gray/50 rounded-xl transition-colors">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="text-sm font-bold text-coke-white">{item.productName}</h3>
+                <div className="flex justify-between items-start gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="text-sm font-bold text-coke-white">{item.productName}</h3>
+                      <span className={`px-2 py-0.5 text-[10px] font-bold rounded-md uppercase tracking-wider ${
+                        item.riskLevel === 'CRITICAL' 
+                          ? 'bg-danger/20 text-danger border border-danger/30' 
+                          : 'bg-warning/20 text-warning border border-warning/30'
+                      }`}>
+                        {item.riskLevel === 'CRITICAL' ? 'Crítico' : 'Atenção'}
+                      </span>
+                    </div>
                     <p className="text-xs text-text-dim mt-1">{item.storeName}</p>
                     <p className="text-xs text-text-dim mt-1">Vence em: {new Date(item.expirationDate).toLocaleDateString('pt-BR')}</p>
                   </div>
-                  <span className="px-2 py-1 bg-danger/10 text-danger border border-danger/20 text-xs font-bold rounded-md whitespace-nowrap">
+                  <span className={`px-2.5 py-1 text-xs font-bold rounded-md whitespace-nowrap shrink-0 ${
+                    item.riskLevel === 'CRITICAL'
+                      ? 'bg-danger/10 text-danger border border-danger/20'
+                      : 'bg-warning/10 text-warning border border-warning/20'
+                  }`}>
                     {item.quantity} un
                   </span>
                 </div>
               </div>
             ))}
-            {criticalItems.length === 0 && (
+            {alertItems.length === 0 && (
               <div className="p-8 text-center text-text-dim h-full flex items-center justify-center">
                 <div className="flex flex-col items-center">
                    <div className="w-12 h-12 bg-success/10 rounded-full flex items-center justify-center mb-3">
                      <ClipboardCheck className="w-6 h-6 text-success" />
                    </div>
-                   Nenhum alerta crítico no momento.<br/>O estoque dos PDVs está sob controle.
+                   Nenhum alerta de validade no momento.<br/>O estoque dos PDVs está sob controle.
                 </div>
               </div>
             )}
